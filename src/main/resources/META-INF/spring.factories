@@ -1,0 +1,3 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+chy.frame.multidatasourcespringstarter.autoConfig.MultiMybatisDataSourceAutoConfig,\
+chy.frame.multidatasourcespringstarter.autoConfig.MultiDataSourceAutoConfig
