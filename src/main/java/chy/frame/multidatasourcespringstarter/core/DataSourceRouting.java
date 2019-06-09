@@ -25,9 +25,9 @@ public class DataSourceRouting extends AbstractRoutingDataSource {
     @Override
     protected Object determineCurrentLookupKey() {
         String currentName = threadLocal.get();
+        //没有时,拿第一个
         if(currentName == null){
-            //currentName = dataSourceMap.keySet().iterator().next();
-            currentName = "storedb";
+            currentName = dataSourceMap.keySet().iterator().next();
         }
 
         return currentName;
@@ -135,6 +135,11 @@ public class DataSourceRouting extends AbstractRoutingDataSource {
             return stringConnectionMap.get(currentName);
         }
 
+    }
+
+
+    public void clearThreadLocal(){
+        threadLocal.remove();
     }
 
 }
