@@ -1,6 +1,8 @@
 package chy.frame.multidatasourcespringstarter.core;
 
 import chy.frame.multidatasourcespringstarter.annotation.TransactionMulti;
+import chy.frame.multidatasourcespringstarter.enums.TransactionTypeEnum;
+import org.apache.ibatis.session.SqlSessionException;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.AfterThrowing;
@@ -38,8 +40,9 @@ public class MultiTransactionManagerAop {
         TransactionMulti annotation = method.getAnnotation(TransactionMulti.class);
 
         String[] values = annotation.value();
+        int transactionType = annotation.transactionType();
         //把涉及到的连接绑定到线程上,开启事务,关闭自动提交
-        begin(values);
+        begin(values,transactionType);
         //正真执行了 方法
         joinpoint.proceed();
         //commit
@@ -57,7 +60,7 @@ public class MultiTransactionManagerAop {
 
 
 
-    private void begin(String[] values) throws SQLException {
+    private void begin(String[] values,int transactionType) throws SQLException {
         List<Connection> result = new ArrayList<>();
         for (String value : values) {
             DataSource dataSource = dataSourceRouting.getDataSource(value);
@@ -65,6 +68,7 @@ public class MultiTransactionManagerAop {
                 continue;
             }
             Connection connection = dataSource.getConnection();
+            prepareTransactionalConnection(connection,transactionType);
             connectBegin(connection);
             //绑定到线程上面
             dataSourceRouting.bindConnection(value,connection);
@@ -90,20 +94,16 @@ public class MultiTransactionManagerAop {
 
 
     /**
-     * 设置隔离级别,这里先先死,后面慢慢 填坑
+     * 设置隔离级别
      * @param con
      * @throws SQLException
      */
-    protected void prepareTransactionalConnection(Connection con)
+    protected void prepareTransactionalConnection(Connection con,int transactionType)
             throws SQLException {
-
-        Statement stmt = con.createStatement();
-        try {
-            stmt.executeUpdate("SET TRANSACTION READ ONLY");
+        if (TransactionTypeEnum.isNotDefined(transactionType)){
+            throw new SqlSessionException("当前事物隔离级别未被定义");
         }
-        finally {
-            stmt.close();
-        }
+        con.setTransactionIsolation(transactionType);
     }
 
 

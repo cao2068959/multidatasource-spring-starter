@@ -29,17 +29,29 @@ public class DataSourceChangeAop {
 
     @Before("annotationPointcut()")
     public void beforMethod(JoinPoint point){
-        MethodSignature methodSignature = (MethodSignature) point.getSignature();
-        Method method = methodSignature.getMethod();
-        DataSource annotation = method.getAnnotation(DataSource.class);
-        String value = annotation.value();
-        //切换了数据源
-        dataSourceRouting.changeDataSource(value);
+        Signature signature = point.getSignature();
+        if (signature instanceof MethodSignature){
+            //获取当前方法的签名
+            MethodSignature methodSignature = (MethodSignature)signature ;
+            //获取当前方法
+            Method method = methodSignature.getMethod();
+            //获取指定注解的引用
+            DataSource annotation = method.getAnnotation(DataSource.class);
+            //获取参数，使用的数据源
+            String value = annotation.value();
+            //切换了数据源
+            dataSourceRouting.changeDataSource(value);
+        }else {
+            Class<?> target = point.getTarget().getClass();
+            DataSource annotation = target.getAnnotation(DataSource.class);
+            String value = annotation.value();
+            dataSourceRouting.changeDataSource(value);
+        }
     }
 
     @Before("interfacePoint()")
     public void interfacePointBefore(JoinPoint point) throws Exception {
-        //获取代理对象上所有的接口
+        //获取被代理对象上所有的接口
         Class<?>[] interfaces = point.getTarget().getClass().getInterfaces();
 
         //扫描上面的DataSource 注解
@@ -60,7 +72,7 @@ public class DataSourceChangeAop {
 
 
     @After("annotationPointcut() ||interfacePoint() ")
-    public void After(JoinPoint point) throws Exception {
+    public void after(JoinPoint point) throws Exception {
         dataSourceRouting.clearThreadLocal();
     }
 

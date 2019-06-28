@@ -1,6 +1,7 @@
 package chy.frame.multidatasourcespringstarter.properties;
 
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 

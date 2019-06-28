@@ -11,7 +11,6 @@ public class MultiDataSourceProperties {
 
     Map<String,DataSourceExtentProperties> dataSource;
 
-
     public Map<String, DataSourceExtentProperties> getDataSource() {
         return dataSource;
     }

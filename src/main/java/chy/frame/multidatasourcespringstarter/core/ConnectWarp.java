@@ -22,11 +22,12 @@ public class ConnectWarp implements Connection {
     public void commit() throws SQLException {
         //connection.commit();
     }
+
+
     public void commit(boolean flag) throws SQLException {
         if(flag){
             connection.commit();
         }
-        //
     }
 
 
@@ -47,65 +48,98 @@ public class ConnectWarp implements Connection {
         //connection.close();
     }
 
-
+    /**
+     * 创建一个 Statement对象，用于将SQL语句发送到数据库。
+     */
     @Override
     public Statement createStatement() throws SQLException {
         return connection.createStatement();
     }
 
+    /**
+     * 创建一个 PreparedStatement对象，用于将参数化的SQL语句发送到数据库。
+     * @param sql 预处理sql foo：select * from foo where id = ?
+     */
     @Override
     public PreparedStatement prepareStatement(String sql) throws SQLException {
         return connection.prepareStatement(sql);
     }
 
+    /**
+     * 创建一个调用数据库存储过程的 CallableStatement对象。
+     * @param sql
+     */
     @Override
     public CallableStatement prepareCall(String sql) throws SQLException {
         return connection.prepareCall(sql);
     }
 
+    /**
+     * 将给定的SQL语句转换为系统的本机SQL语法
+     * @param sql
+     */
     @Override
     public String nativeSQL(String sql) throws SQLException {
         return connection.nativeSQL(sql);
     }
 
+    /**
+     * 将此连接的自动提交模式设置为给定状态。
+     * @param autoCommit 是否自动提交
+     */
     @Override
     public void setAutoCommit(boolean autoCommit) throws SQLException {
         connection.setAutoCommit(autoCommit);
     }
 
+    /**
+     * 对象的当前自动提交模式
+     */
     @Override
     public boolean getAutoCommit() throws SQLException {
         return connection.getAutoCommit();
     }
 
-
-
+    /**
+     * 撤消在当前事务中所做的所有更改，并释放此 Connection对象当前持有的任何数据库锁。
+     */
     @Override
     public void rollback() throws SQLException {
         connection.rollback();
     }
 
-
-
+    /**
+     * 此Connection对象是否已关闭。
+     */
     @Override
     public boolean isClosed() throws SQLException {
         return connection.isClosed();
     }
 
+    /**
+     * 获取对象的数据源信息
+     */
     @Override
     public DatabaseMetaData getMetaData() throws SQLException {
         return connection.getMetaData();
     }
 
+    /**
+     * 设置连接是否只读
+     */
     @Override
     public void setReadOnly(boolean readOnly) throws SQLException {
         connection.setReadOnly(readOnly);
     }
 
+    /**
+     * 检索连接的只读状态
+     */
     @Override
     public boolean isReadOnly() throws SQLException {
         return connection.isReadOnly();
     }
+
 
     @Override
     public void setCatalog(String catalog) throws SQLException {
@@ -117,21 +151,33 @@ public class ConnectWarp implements Connection {
         return connection.getCatalog();
     }
 
+    /**
+     * 设置事物的隔离级别
+     */
     @Override
     public void setTransactionIsolation(int level) throws SQLException {
         connection.setTransactionIsolation(level);
     }
 
+    /**
+     * 获取当前连接的事物隔离级别
+     */
     @Override
     public int getTransactionIsolation() throws SQLException {
         return connection.getTransactionIsolation();
     }
 
+    /**
+     * 获取连接报告中的第一个警告
+     */
     @Override
     public SQLWarning getWarnings() throws SQLException {
         return connection.getWarnings();
     }
 
+    /**
+     * 清空所有连接报告
+     */
     @Override
     public void clearWarnings() throws SQLException {
         connection.clearWarnings();
