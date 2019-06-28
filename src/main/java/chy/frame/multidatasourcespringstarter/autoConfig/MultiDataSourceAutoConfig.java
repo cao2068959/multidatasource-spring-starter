@@ -64,12 +64,6 @@ public class MultiDataSourceAutoConfig {
         return multiTransactionManagerAop;
     }
 
-    @Bean
-    public SpringTransactionManagerAop springTransactionManagerAop() {
-        SpringTransactionManagerAop springTransactionManagerAop = new SpringTransactionManagerAop();
-        return springTransactionManagerAop;
-    }
-
 
     private DataSource dataSource(DataSourceProperties properties) {
         DataSourceBuilder factory = DataSourceBuilder
