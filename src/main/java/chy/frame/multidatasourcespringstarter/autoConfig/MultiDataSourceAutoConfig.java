@@ -4,7 +4,6 @@ package chy.frame.multidatasourcespringstarter.autoConfig;
 import chy.frame.multidatasourcespringstarter.core.DataSourceChangeAop;
 import chy.frame.multidatasourcespringstarter.core.DataSourceRouting;
 import chy.frame.multidatasourcespringstarter.core.MultiTransactionManagerAop;
-import chy.frame.multidatasourcespringstarter.core.SpringTransactionManagerAop;
 import chy.frame.multidatasourcespringstarter.properties.DataSourceExtentProperties;
 import chy.frame.multidatasourcespringstarter.properties.MultiDataSourceProperties;
 import org.springframework.beans.factory.annotation.Autowired;
