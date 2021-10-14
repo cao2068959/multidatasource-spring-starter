@@ -15,15 +15,21 @@
 需要 spring boot 2.0 以上的版本
 
 
-### 安装项目
+### 引用坐标
 
-下载本仓库后,直接直接 执行 `mvn install` 后 引用项目坐标
+使用maven中央仓库中的坐标
 ```xml
 <dependency>
-   <groupId>chy.frame</groupId>
-   <artifactId>multidatasource-spring-starter</artifactId>
-   <version>0.0.1-SNAPSHOT</version>
+  <groupId>io.github.cao2068959</groupId>
+  <artifactId>multidatasource-spring-starter</artifactId>
+  <version>1.1.0</version>
 </dependency>
+```
+
+或者`clone`本仓库后执行以下命令来安装
+
+```shell
+mvn clean install
 ```
 
 ### 配置文件

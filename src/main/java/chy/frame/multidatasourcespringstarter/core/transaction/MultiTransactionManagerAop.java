@@ -39,7 +39,6 @@ public class MultiTransactionManagerAop {
         Method method = methodSignature.getMethod();
         TransactionMulti annotation = method.getAnnotation(TransactionMulti.class);
         int transactionType = annotation.transactionType();
-
         //开启事务
         dataSourceRouting.beginTransaction(transactionType);
         //正真执行了 方法
