@@ -96,7 +96,7 @@ chy:
 `@TransactionMulti`
 
 ```java
- @TransactionMulti
+    @TransactionMulti
     public void setUser(){
         Random random = new Random();
         //使用了storedb数据源的写操作
