@@ -87,14 +87,15 @@ chy:
 ### 事物
 这边定义了 一个新的事 注解来解决多个数据源的事物问题 
 
-`@TransactionMulti({"userdb","storedb"})`
-需要在这个注解里指定 这个方法里出现的所有数据源
+`@TransactionMulti`
 
 ```java
- @TransactionMulti({"userdb","storedb"})
+ @TransactionMulti
     public void setUser(){
         Random random = new Random();
+        //使用了storedb数据源的写操作
         userMapper.setEmployee(random.nextInt(10000),"小绿","12345",11,new Date(),new Date());
+        //使用了userdb数据源的读操作
         userMapper.setUser(random.nextInt(10000),"小红","12345",14,1,new Date(),new Date());
         int i = 2 /0;
     }

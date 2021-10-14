@@ -7,6 +7,5 @@ import java.sql.Connection;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
 public @interface TransactionMulti {
-    String[] value() default {};
     int transactionType() default Connection.TRANSACTION_READ_UNCOMMITTED;
 }

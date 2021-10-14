@@ -3,7 +3,7 @@ package chy.frame.multidatasourcespringstarter.autoConfig;
 
 import chy.frame.multidatasourcespringstarter.core.DataSourceChangeAop;
 import chy.frame.multidatasourcespringstarter.core.DataSourceRouting;
-import chy.frame.multidatasourcespringstarter.core.MultiTransactionManagerAop;
+import chy.frame.multidatasourcespringstarter.core.transaction.MultiTransactionManagerAop;
 import chy.frame.multidatasourcespringstarter.properties.DataSourceExtentProperties;
 import chy.frame.multidatasourcespringstarter.properties.MultiDataSourceProperties;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +31,7 @@ public class MultiDataSourceAutoConfig {
     public DataSource multiDataSource() {
         boolean setDefaultFlag = true;
         //真正用来切换数据源的哥们
-        DataSourceRouting dataSourceRouting = new DataSourceRouting();
+        DataSourceRouting dataSourceRouting = new DataSourceRouting() ;
         //拿到配置的所有配置信息
         Map<String, DataSourceExtentProperties> dataSourcePropertiesMap = multiDataSourceProperties.getDataSource();
         for (String dataSourceName : dataSourcePropertiesMap.keySet()) {
@@ -42,8 +42,6 @@ public class MultiDataSourceAutoConfig {
             dataSourceRouting.addDataSouce(dataSourceName, dataSource);
             //设置一些连接池的额外值
             setExProperties(dataSource, dataSourceProperties);
-
-            System.out.println("-");
         }
         //把数据源的压入AbstractRoutingDataSource
         dataSourceRouting.buildDataSouce();

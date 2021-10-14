@@ -1,5 +1,7 @@
 package chy.frame.multidatasourcespringstarter.core;
 
+import chy.frame.multidatasourcespringstarter.core.transaction.SqlTransactionException;
+import chy.frame.multidatasourcespringstarter.core.transaction.TransactionCarrier;
 import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
 
 import javax.sql.DataSource;
@@ -7,26 +9,26 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public class DataSourceRouting extends AbstractRoutingDataSource {
 
-    ThreadLocal<String> threadLocal = new ThreadLocal<>();
+    ThreadLocal<String> currentDataSourceKey = new ThreadLocal<>();
 
     //把当前事物下的连接塞入,用于事物处理
-    ThreadLocal<Map<String, ConnectWarp>> connectionThreadLocal = new ThreadLocal<>();
+    ThreadLocal<TransactionCarrier> transactionCarrierThreadLocal = new ThreadLocal<>();
 
-    //这里只是留一个备份,切换数据源的时候,如果没有对应ke就直接异常,真正调用会传给AbstractRoutingDataSource处理
+    //这里只是留一个备份,切换数据源的时候,如果没有对应key就直接异常,真正调用会传给AbstractRoutingDataSource处理
     //这里只读,没有线程安全问题
     Map<String, DataSource> dataSourceMap = new HashMap<>();
 
     @Override
     protected Object determineCurrentLookupKey() {
-        String currentName = threadLocal.get();
+        String currentName = currentDataSourceKey.get();
         //没有时,拿第一个
         if (currentName == null) {
             currentName = dataSourceMap.keySet().iterator().next();
         }
-
         return currentName;
     }
 
@@ -41,7 +43,7 @@ public class DataSourceRouting extends AbstractRoutingDataSource {
         if (dataSource == null) {
             throw new RuntimeException("无效的数据源");
         }
-        threadLocal.set(name);
+        currentDataSourceKey.set(name);
     }
 
     public void buildDataSouce() {
@@ -57,63 +59,32 @@ public class DataSourceRouting extends AbstractRoutingDataSource {
 
 
     /**
-     * 开启事物的时候,把连接放入 线程中,后续crud 都会拿对应的连接操作
-     *
-     * @param key
-     * @param connection
-     */
-    public void bindConnection(String key, Connection connection) {
-        Map<String, ConnectWarp> connectionMap = connectionThreadLocal.get();
-        if (connectionMap == null) {
-            connectionMap = new HashMap<>();
-            connectionThreadLocal.set(connectionMap);
-        }
-
-        //包装一下 不然给 spring把我关闭了
-        ConnectWarp connectWarp = new ConnectWarp(connection);
-
-        connectionMap.put(key, connectWarp);
-    }
-
-
-    /**
      * 提交事物
      *
      * @throws SQLException
      */
-    protected void doCommit() throws SQLException {
-        Map<String, ConnectWarp> stringConnectionMap = connectionThreadLocal.get();
-        if (stringConnectionMap == null) {
-            return;
-        }
-        for (String dataSourceName : stringConnectionMap.keySet()) {
-            ConnectWarp connection = stringConnectionMap.get(dataSourceName);
-            connection.commit(true);
-            connection.close(true);
-        }
-        removeConnectionThreadLocal();
+    public void commitTransaction() throws SQLException {
+        getCurrentTransactionCarrier().orElseThrow(() -> new SqlTransactionException("当前线程中事物没有开启"))
+                .commitTransaction();
+        //提交事物后清理释放资源
+        clearTransaction();
     }
+
 
     /**
      * 撤销事物
      *
      * @throws SQLException
      */
-    protected void rollback() throws SQLException {
-        Map<String, ConnectWarp> stringConnectionMap = connectionThreadLocal.get();
-        if (stringConnectionMap == null) {
-            return;
-        }
-        for (String dataSourceName : stringConnectionMap.keySet()) {
-            ConnectWarp connection = stringConnectionMap.get(dataSourceName);
-            connection.rollback();
-            connection.close(true);
-        }
-        removeConnectionThreadLocal();
+    public void rollbackTransaction() throws SQLException {
+        getCurrentTransactionCarrier().orElseThrow(() -> new SqlTransactionException("当前线程中事物没有开启"))
+                .rollbackTransaction();
+        //提交事物后清理释放资源
+        clearTransaction();
     }
 
-    protected void removeConnectionThreadLocal() {
-        connectionThreadLocal.remove();
+    protected void clearTransaction() {
+        transactionCarrierThreadLocal.remove();
     }
 
 
@@ -125,21 +96,50 @@ public class DataSourceRouting extends AbstractRoutingDataSource {
      */
     @Override
     public Connection getConnection() throws SQLException {
-        Map<String, ConnectWarp> stringConnectionMap = connectionThreadLocal.get();
-        if (stringConnectionMap == null) {
+        Optional<TransactionCarrier> currentTransactionCarrier = getCurrentTransactionCarrier();
+        if (currentTransactionCarrier.isPresent()) {
+            TransactionCarrier transactionCarrier = currentTransactionCarrier.get();
+            //开了事物 那么从 currentTransactionCarrier中去获取对应的 connect;
+            String currentName = (String) determineCurrentLookupKey();
+
+            Optional<Connection> transactionConnect = transactionCarrier.getConnect(currentName);
+            //使用了已经开启了事务的connect;
+            if (transactionConnect.isPresent()) {
+                return transactionConnect.get();
+            }
+            //开启事物后第一次获取connect, 那么先获取一个新的 connect
+            Connection connection = new ConnectWarp(determineTargetDataSource().getConnection());
+            //把新获取到的 connection 放入 transactionCarrier中,后续再次获取就能直接拿到
+            transactionCarrier.addTransactionConnect(currentName, connection);
+            return connection;
+        } else {
             //没开事物 直接走
             return determineTargetDataSource().getConnection();
-        } else {
-            //开了事物,从当前线程中拿,而且拿到的是 包装过的connect 只有我能关闭O__O "…
-            String currentName = (String) determineCurrentLookupKey();
-            return stringConnectionMap.get(currentName);
         }
-
     }
 
+    private Optional<TransactionCarrier> getCurrentTransactionCarrier() {
+        return Optional.ofNullable(transactionCarrierThreadLocal.get());
+    }
 
     public void clearThreadLocal() {
-        threadLocal.remove();
+        currentDataSourceKey.remove();
     }
+
+    /**
+     * 当前线程开启了事务
+     *
+     * @param transactionType
+     */
+    public void beginTransaction(int transactionType) {
+        Optional<TransactionCarrier> currentTransactionCarrier = getCurrentTransactionCarrier();
+        //已经开启过了,不在重复开启了
+        if (currentTransactionCarrier.isPresent()) {
+            return;
+        }
+        TransactionCarrier transactionCarrier = new TransactionCarrier(transactionType);
+        transactionCarrierThreadLocal.set(transactionCarrier);
+    }
+
 
 }
