@@ -64,6 +64,10 @@ chy:
         password: mysql密码
         username: mysql账号
         url: jdbc:mysql://192.168.10.10:3306/db_store?characterEncoding=utf8
+    #如果使用了 mybatis作为 orm框架可以配置以下特殊处理
+    mybatis:
+      #开启 mybatis 的自动配置, 这里将会自动配置 SqlSessionFactory 对象, 如果使用了 其他的mybatis自动配置插件(如:mybatis-plus)请关闭
+      autoconf: true 
 ```
 上述 配置文件中 可以看出 ,配置了2个数据源 一个是 `userdb` 使用了 `druid` 作为数据源,一个 叫做 `storedb`
 使用了 默认的 `Tomcat` 数据源,同样你也换成速度更快的 `HikariCP`, 配置同 `spring-boot` 默认的 `dataSource`

@@ -17,6 +17,7 @@ import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,29 +30,23 @@ import javax.sql.DataSource;
 import java.util.List;
 
 
-
 @Configuration
-@ConditionalOnClass({ SqlSessionFactory.class, SqlSessionFactoryBean.class })
+@ConditionalOnClass({SqlSessionFactory.class, SqlSessionFactoryBean.class})
 @AutoConfigureAfter(MultiDataSourceAutoConfig.class)
 @EnableConfigurationProperties(MybatisProperties.class)
-public class MultiMybatisDataSourceAutoConfig  extends MybatisAutoConfiguration {
-
+@ConditionalOnProperty(prefix = "chy.multi.mybatis", name = "autoconf", havingValue = "true", matchIfMissing = false)
+public class MultiMybatisDataSourceAutoConfig extends MybatisAutoConfiguration {
 
     public MultiMybatisDataSourceAutoConfig(MybatisProperties properties, ObjectProvider<Interceptor[]> interceptorsProvider, ResourceLoader resourceLoader, ObjectProvider<DatabaseIdProvider> databaseIdProvider, ObjectProvider<List<ConfigurationCustomizer>> configurationCustomizersProvider) {
         super(properties, interceptorsProvider, resourceLoader, databaseIdProvider, configurationCustomizersProvider);
     }
 
-
     @Bean
     @ConditionalOnBean(name = "multiDataSource")
-    public SqlSessionFactory MybaitisDataSouce(@Qualifier("multiDataSource")DataSource dataSource) throws Exception {
+    public SqlSessionFactory MybaitisDataSouce(@Qualifier("multiDataSource") DataSource dataSource) throws Exception {
         //把数据源给注入进去
-       return super.sqlSessionFactory(dataSource);
+        return super.sqlSessionFactory(dataSource);
     }
-
-
-
-
 
 
 }
