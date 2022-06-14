@@ -67,7 +67,7 @@ public class TransactionCarrier {
 
 
     /**
-     * 开启事物的一些准本工作
+     * 关闭自动提交
      */
     private void connectBegin(Connection connection) throws SQLException {
         if (connection.getAutoCommit()) {
@@ -76,18 +76,18 @@ public class TransactionCarrier {
     }
 
 
-
     /**
      * 提交事物
      */
     public void commitTransaction() throws SQLException {
         for (Map.Entry<String, Connection> connectionEntry : transactionConnects.entrySet()) {
             Connection connection = connectionEntry.getValue();
-            if (!(connection instanceof ConnectWarp)){
+            if (!(connection instanceof ConnectWarp)) {
                 continue;
             }
             ConnectWarp connectWarp = (ConnectWarp) connection;
             connectWarp.commit(true);
+            connectWarp.setAutoCommit(false);
             connectWarp.close(true);
         }
     }
@@ -95,11 +95,12 @@ public class TransactionCarrier {
     public void rollbackTransaction() throws SQLException {
         for (Map.Entry<String, Connection> connectionEntry : transactionConnects.entrySet()) {
             Connection connection = connectionEntry.getValue();
-            if (!(connection instanceof ConnectWarp)){
+            if (!(connection instanceof ConnectWarp)) {
                 continue;
             }
             ConnectWarp connectWarp = (ConnectWarp) connection;
             connectWarp.rollback();
+            connectWarp.setAutoCommit(false);
             connectWarp.close(true);
         }
 
