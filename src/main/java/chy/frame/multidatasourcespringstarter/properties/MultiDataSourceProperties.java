@@ -9,9 +9,11 @@ import java.util.Map;
 @ConfigurationProperties(prefix = "chy.multi")
 public class MultiDataSourceProperties {
 
-    Map<String, DataSourceExtentProperties> dataSource;
+    String defaultDataSource;
 
     MybatisProperties mybatis;
+
+    Map<String, DataSourceExtentProperties> dataSource;
 
     public Map<String, DataSourceExtentProperties> getDataSource() {
         return dataSource;
@@ -27,5 +29,13 @@ public class MultiDataSourceProperties {
 
     public void setMybatis(MybatisProperties mybatis) {
         this.mybatis = mybatis;
+    }
+
+    public String getDefaultDataSource() {
+        return defaultDataSource;
+    }
+
+    public void setDefaultDataSource(String defaultDataSource) {
+        this.defaultDataSource = defaultDataSource;
     }
 }

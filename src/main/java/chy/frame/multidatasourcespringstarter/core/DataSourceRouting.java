@@ -13,6 +13,9 @@ import java.util.Optional;
 
 public class DataSourceRouting extends AbstractRoutingDataSource {
 
+
+    String defaultDataSource;
+
     ThreadLocal<String> currentDataSourceKey = new ThreadLocal<>();
 
     //把当前事物下的连接塞入,用于事物处理
@@ -25,13 +28,23 @@ public class DataSourceRouting extends AbstractRoutingDataSource {
     @Override
     protected Object determineCurrentLookupKey() {
         String currentName = currentDataSourceKey.get();
-        //没有时,拿第一个
+        //没有时,拿默认的，默认也拿不到就拿第一个
         if (currentName == null) {
-            currentName = dataSourceMap.keySet().iterator().next();
+            if (defaultDataSource != null){
+                return defaultDataSource;
+            }
+            return dataSourceMap.keySet().stream().findFirst().get();
         }
         return currentName;
     }
 
+    public String getDefaultDataSource() {
+        return defaultDataSource;
+    }
+
+    public void setDefaultDataSource(String defaultDataSource) {
+        this.defaultDataSource = defaultDataSource;
+    }
 
     public DataSource getDataSource(String key) {
         return dataSourceMap.get(key);

@@ -6,6 +6,7 @@ import chy.frame.multidatasourcespringstarter.core.DataSourceRouting;
 import chy.frame.multidatasourcespringstarter.core.transaction.MultiTransactionManagerAop;
 import chy.frame.multidatasourcespringstarter.properties.DataSourceExtentProperties;
 import chy.frame.multidatasourcespringstarter.properties.MultiDataSourceProperties;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -14,10 +15,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import javax.sql.DataSource;
+import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Configuration
 @EnableConfigurationProperties(MultiDataSourceProperties.class)
@@ -29,9 +36,8 @@ public class MultiDataSourceAutoConfig {
 
     @Bean
     public DataSource multiDataSource() {
-        boolean setDefaultFlag = true;
         //真正用来切换数据源的哥们
-        DataSourceRouting dataSourceRouting = new DataSourceRouting() ;
+        DataSourceRouting dataSourceRouting = new DataSourceRouting();
         //拿到配置的所有配置信息
         Map<String, DataSourceExtentProperties> dataSourcePropertiesMap = multiDataSourceProperties.getDataSource();
         for (String dataSourceName : dataSourcePropertiesMap.keySet()) {
@@ -43,8 +49,11 @@ public class MultiDataSourceAutoConfig {
             //设置一些连接池的额外值
             setExProperties(dataSource, dataSourceProperties);
         }
+        dataSourceRouting.setDefaultDataSource(multiDataSourceProperties.getDefaultDataSource());
         //把数据源的压入AbstractRoutingDataSource
         dataSourceRouting.buildDataSouce();
+
+
         return dataSourceRouting;
     }
 
@@ -83,23 +92,57 @@ public class MultiDataSourceAutoConfig {
         if (pool == null) {
             return;
         }
+        Class<? extends DataSource> dataSourceClass = dataSource.getClass();
+        Map<String, PropertyDescriptor> descriptorMap = Arrays.stream(BeanUtils.getPropertyDescriptors(dataSourceClass)).collect(Collectors.toMap(PropertyDescriptor::getName, s -> s));
+
         for (String key : pool.keySet()) {
             Object value = pool.get(key);
-            Class<? extends DataSource> dataSourceClass = dataSource.getClass();
             try {
                 //把key转驼峰
                 String newKey = keyConver(key);
-                Field field = getField(dataSourceClass, newKey);
-                if (field == null) {
+                PropertyDescriptor propertyDescriptor = descriptorMap.get(newKey);
+                if (propertyDescriptor == null) {
                     System.err.println(String.format("pool.%s = %s 没有正确映射 请检查参数是否正确", key, value));
                     continue;
                 }
-                field.setAccessible(true);
-                field.set(dataSource, value);
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
+                Method writeMethod = propertyDescriptor.getWriteMethod();
+                if (writeMethod == null) {
+                    System.err.println(String.format("pool.%s = %s 不能设置对应的值", key, value));
+                    continue;
+                }
+                writeMethod.setAccessible(true);
+                writeMethod.invoke(dataSource, typeHandler(value, propertyDescriptor.getPropertyType()));
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                throw new RuntimeException(e);
             }
         }
+    }
+
+    /**
+     * 反射的时候进行类型处理，如：value其实是 "2", field 期望的类型是 int
+     *
+     * @param value
+     * @return
+     */
+    private Object typeHandler(Object value, Class<?> type) {
+        if (value == null) {
+            return value;
+        }
+        if (value.getClass() == type) {
+            return value;
+        }
+        if (Integer.class == type || int.class == type) {
+            return Integer.parseInt(value.toString());
+        }
+
+        if (Long.class == type || long.class == type) {
+            return Long.parseLong(value.toString());
+        }
+
+        if (Boolean.class == type || boolean.class == type) {
+            return Boolean.parseBoolean(value.toString());
+        }
+        return value;
     }
 
     /**

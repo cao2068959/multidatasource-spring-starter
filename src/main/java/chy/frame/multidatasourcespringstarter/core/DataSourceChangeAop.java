@@ -21,33 +21,46 @@ public class DataSourceChangeAop {
     @Autowired
     private DataSourceRouting dataSourceRouting;
 
-    @Pointcut("@annotation(chy.frame.multidatasourcespringstarter.annotation.DataSource)")
-    public void annotationPointcut(){}
+    @Pointcut("@annotation(chy.frame.multidatasourcespringstarter.annotation.DataSource) || @within(chy.frame.multidatasourcespringstarter.annotation.DataSource)")
+    public void annotationPointcut() {
+    }
 
     @Pointcut("this(chy.frame.multidatasourcespringstarter.annotation.JpaMulti)")
-    public void interfacePoint(){}
+    public void interfacePoint() {
+    }
 
     @Before("annotationPointcut()")
-    public void beforMethod(JoinPoint point){
+    public void beforMethod(JoinPoint point) {
         Signature signature = point.getSignature();
-        if (signature instanceof MethodSignature){
+        if (signature instanceof MethodSignature) {
             //获取当前方法的签名
-            MethodSignature methodSignature = (MethodSignature)signature ;
+            MethodSignature methodSignature = (MethodSignature) signature;
             //获取当前方法
             Method method = methodSignature.getMethod();
-            //获取指定注解的引用
-            DataSource annotation = method.getAnnotation(DataSource.class);
+            DataSource annotation = getDataSourceAnnotation(method);
             //获取参数，使用的数据源
             String value = annotation.value();
             //切换了数据源
             dataSourceRouting.changeDataSource(value);
-        }else {
+        } else {
             Class<?> target = point.getTarget().getClass();
             DataSource annotation = target.getAnnotation(DataSource.class);
             String value = annotation.value();
             dataSourceRouting.changeDataSource(value);
         }
     }
+
+    private DataSource getDataSourceAnnotation(Method method) {
+
+        //获取指定注解的引用
+        DataSource annotation = method.getDeclaredAnnotation(DataSource.class);
+        if (annotation != null) {
+            return annotation;
+        }
+        // 方法上找不到就去类上面找
+        return method.getDeclaringClass().getDeclaredAnnotation(DataSource.class);
+    }
+
 
     @Before("interfacePoint()")
     public void interfacePointBefore(JoinPoint point) throws Exception {
@@ -57,7 +70,7 @@ public class DataSourceChangeAop {
         //扫描上面的DataSource 注解
         for (Class<?> anInterface : interfaces) {
             DataSource annotation = anInterface.getAnnotation(DataSource.class);
-            if(annotation == null){
+            if (annotation == null) {
                 continue;
             }
 
@@ -75,8 +88,6 @@ public class DataSourceChangeAop {
     public void after(JoinPoint point) throws Exception {
         dataSourceRouting.clearThreadLocal();
     }
-
-
 
 
 }
