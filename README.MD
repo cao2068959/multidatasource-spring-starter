@@ -22,7 +22,7 @@
 <dependency>
   <groupId>io.github.cao2068959</groupId>
   <artifactId>multidatasource-spring-starter</artifactId>
-  <version>1.1.2</version>
+  <version>1.1.3</version>
 </dependency>
 ```
 
@@ -37,6 +37,8 @@ mvn clean install
 ```yaml
 chy:
   multi:
+    #默认的数据源
+    default-data-source: userdb
     data-source:
       #定义了一个数据源叫做 userdb
       userdb:
@@ -78,7 +80,7 @@ chy:
 
 在对应的调用接口上打上注解 `@DataSource("storedb")` 来指定对应的dao 接口使用的是什么数据源
 
-如果接口上没有标注 `@DataSource` 则默认使用第一个数据源
+如果接口上没有标注 `@DataSource` 则使用 `chy.multi.default-data-source` 指定的数据源, 如果该配置也没有配置,那么使用第一个数据源
 
 ```java
     @Select("select * from employee")
